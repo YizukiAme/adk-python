@@ -252,6 +252,8 @@ class TestExecuteBashTool:
     )
     tool = bash_tool.ExecuteBashTool(workspace=workspace, policy=policy)
     mock_process = mock.AsyncMock()
+    print(f"mock_process: {mock_process.pid}")
+    mock_process.pid = None  # Ensure finally block doesn't try to kill it
     mock_process.communicate.return_value = (b"", b"")
     mock_exec = mock.AsyncMock(return_value=mock_process)
 
@@ -273,3 +275,18 @@ class TestExecuteBashTool:
         mock_setrlimit.assert_any_call(
             resource.RLIMIT_FSIZE, (50 * 1024 * 1024, 50 * 1024 * 1024)
         )
+        
+
+      # THE FIX: Patch the resource module specifically within the bash_tool module.
+      # This ensures the preexec_fn uses the mock instead of the real system call.
+      # with mock.patch.object(bash_tool.resource, "setrlimit") as mock_setrlimit:
+      #     preexec_fn()
+
+      #     # Assertions stay the same, but now they are safe to run!
+      #     mock_setrlimit.assert_any_call(resource.RLIMIT_CORE, (0, 0))
+      #     mock_setrlimit.assert_any_call(
+      #         resource.RLIMIT_AS, (100 * 1024 * 1024, 100 * 1024 * 1024)
+      #     )
+      #     mock_setrlimit.assert_any_call(
+      #         resource.RLIMIT_FSIZE, (50 * 1024 * 1024, 50 * 1024 * 1024)
+      #     )
